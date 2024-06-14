@@ -141,35 +141,78 @@ This repository provides a step-by-step guide to setting up a basic Flower feder
 
     **Server Script Content**:
     ```python
+    import numpy as np
     import flwr as fl
+    from typing import List, Tuple, Dict, Optional
+    from flwr.common import parameters_to_ndarrays, ndarrays_to_parameters
     from pathlib import Path
     import logging
-
-    # Configure logging
-    logging.basicConfig(level=logging.DEBUG)
+    
+    # Define Scalar type
+    Scalar = float
+    
+    logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
-
-    def main():
-        logger.info("Starting Flower server...")
-
-        # Create a Flower server with a simple strategy
-        strategy = fl.server.strategy.FedAvg(min_fit_clients=1, min_evaluate_clients=1, min_available_clients=1)
-
-        # Start Flower server (SSL-enabled)
+    
+    # Simple Neural Network
+    def init_weights(input_size, hidden_size, output_size):
+        np.random.seed(42)
+        w1 = np.random.randn(input_size, hidden_size)
+        b1 = np.zeros((1, hidden_size))
+        w2 = np.random.randn(hidden_size, output_size)
+        b2 = np.zeros((1, output_size))
+        return [w1, b1, w2, b2]
+    
+    def predict(weights, x):
+        w1, b1, w2, b2 = weights
+        z1 = x @ w1 + b1
+        a1 = np.maximum(0, z1)
+        z2 = a1 @ w2 + b2
+        return z2
+    
+    # Initialize global model
+    input_size = 2
+    hidden_size = 5
+    output_size = 1
+    global_weights = init_weights(input_size, hidden_size, output_size)
+    
+    class SaveModelStrategy(fl.server.strategy.FedAvg):
+        def __init__(self, *args, **kwargs):
+            super(SaveModelStrategy, self).__init__(*args, **kwargs)
+            self.weights = global_weights
+    
+        def aggregate_fit(
+            self,
+            server_round: int,
+            results: List[Tuple[fl.server.client_proxy.ClientProxy, fl.common.FitRes]],
+            failures: List[BaseException],
+        ) -> Tuple[Optional[fl.common.Parameters], Dict[str, Scalar]]:
+            aggregated_parameters, aggregated_metrics = super().aggregate_fit(server_round, results, failures)
+            if aggregated_parameters is not None:
+                self.weights = parameters_to_ndarrays(aggregated_parameters)
+                logger.info(f"Aggregated weights: {self.weights}")
+            return aggregated_parameters, aggregated_metrics
+    
+    if __name__ == "__main__":
+        strategy = SaveModelStrategy(
+            fraction_fit=1,
+            fraction_evaluate=1,
+            min_fit_clients=1,
+            min_evaluate_clients=1,
+            min_available_clients=1,
+        )
+    
         fl.server.start_server(
             server_address="0.0.0.0:9092",
-            config=fl.server.ServerConfig(num_rounds=3),
             strategy=strategy,
+            config=fl.server.ServerConfig(num_rounds=3),
             certificates=(
                 Path("/etc/ssl/flower/ca.crt").read_bytes(),
                 Path("/etc/ssl/flower/fl_server.crt").read_bytes(),
                 Path("/etc/ssl/flower/fl_server.key").read_bytes(),
             ),
         )
-        logger.info("Flower server started successfully.")
 
-    if __name__ == "__main__":
-        main()
     ```
 
 4. **Run the Server Script**:
@@ -260,49 +303,78 @@ This repository provides a step-by-step guide to setting up a basic Flower feder
     ```python
     import numpy as np
     import flwr as fl
-    import logging
     from pathlib import Path
+    import logging
     from typing import Dict, Tuple
-
-    # Configure logging
-    logging.basicConfig(level=logging.DEBUG)
+    
+    logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
-
-    class BasicClient(fl.client.NumPyClient):
+    
+    # Simple Neural Network
+    def init_weights(input_size, hidden_size, output_size):
+        np.random.seed(42)
+        w1 = np.random.randn(input_size, hidden_size)
+        b1 = np.zeros((1, hidden_size))
+        w2 = np.random.randn(hidden_size, output_size)
+        b2 = np.zeros((1, output_size))
+        return [w1, b1, w2, b2]
+    
+    def predict(weights, x):
+        w1, b1, w2, b2 = weights
+        z1 = x @ w1 + b1
+        a1 = np.maximum(0, z1)
+        z2 = a1 @ w2 + b2
+        return z2
+    
+    def get_parameters(weights):
+        return [w.flatten() for w in weights]
+    
+    def set_parameters(weights, parameters):
+        w1_shape = weights[0].shape
+        b1_shape = weights[1].shape
+        w2_shape = weights[2].shape
+        b2_shape = weights[3].shape
+        weights[0] = parameters[0].reshape(w1_shape)
+        weights[1] = parameters[1].reshape(b1_shape)
+        weights[2] = parameters[2].reshape(w2_shape)
+        weights[3] = parameters[3].reshape(b2_shape)
+    
+    # Initialize local model
+    input_size = 2
+    hidden_size = 5
+    output_size = 1
+    local_weights = init_weights(input_size, hidden_size, output_size)
+    
+    class SimpleClient(fl.client.NumPyClient):
         def get_parameters(self, config: Dict[str, fl.common.Scalar]) -> fl.common.NDArrays:
-            logger.info("Client: get_parameters")
-            return np.array([0.1], dtype=np.float32)
-
+            return get_parameters(local_weights)
+    
         def fit(self, parameters: fl.common.NDArrays, config: Dict[str, fl.common.Scalar]) -> Tuple[fl.common.NDArrays, int, Dict[str, fl.common.Scalar]]:
-            logger.info("Client: fit")
-            # Perform a mock "training" step
-            new_parameters = np.array([0.2], dtype=np.float32)
-            num_examples_train = 1  # Mock number of training examples
-            metrics = {"accuracy": 0.9}  # Mock metric
+            set_parameters(local_weights, parameters)
+            # Mock training process
+            new_parameters = get_parameters(local_weights)
+            num_examples_train = 100
+            metrics = {"accuracy": 0.9}
             return new_parameters, num_examples_train, metrics
-
+    
         def evaluate(self, parameters: fl.common.NDArrays, config: Dict[str, fl.common.Scalar]) -> Tuple[float, int, Dict[str, fl.common.Scalar]]:
-            logger.info("Client: evaluate")
-            # Perform a mock "evaluation" step
+            set_parameters(local_weights, parameters)
             loss = 0.1  # Mock loss
-            num_examples_test = 1  # Mock number of test examples
-            metrics = {"accuracy": 0.9}  # Mock metric
+            num_examples_test = 100
+            metrics = {"accuracy": 0.95}
             return loss, num_examples_test, metrics
-
+    
     def main():
-        # Initialize client
-        client = BasicClient()
-        flower_client = client.to_client()
-
-        # Start Flower client
+        client = SimpleClient()
         fl.client.start_client(
             server_address="172.31.24.144:9092",
-            client=flower_client,
+            client=client.to_client(),
             root_certificates=Path("/etc/ssl/flower/ca.crt").read_bytes(),
         )
-
+    
     if __name__ == "__main__":
         main()
+
     ```
 
 4. **Run the Client Script**:
