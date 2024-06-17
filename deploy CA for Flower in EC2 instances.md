@@ -65,7 +65,7 @@ IP.2 = <flserver_private_IP>
 
 ```bash
 openssl genpkey -algorithm RSA -out /etc/ssl/flower/ca.key -pkeyopt rsa_keygen_bits:2048
-openssl req -new -x509 -key /etc/ssl/flower/ca.key -out /etc/ssl/flower/ca.crt -days 365 -subj "/C=US/ST=New York/O=ScriptChain/OU=AI/CN=PrivateCA"
+openssl req -new -x509 -key /etc/ssl/flower/ca.key -out /etc/ssl/flower/ca.crt -days 365 -subj "/C=US/ST=New York/O=SC/OU=AI/CN=PrivateCA"
 ```
 
 #### Generate Server Key, CSR, and Certificate
@@ -80,7 +80,7 @@ openssl x509 -req -in /etc/ssl/flower/server.csr -CA /etc/ssl/flower/ca.crt -CAk
 
 ```bash
 openssl genpkey -algorithm RSA -out /etc/ssl/flower/client.key -pkeyopt rsa_keygen_bits:2048
-openssl req -new -key /etc/ssl/flower/client.key -out /etc/ssl/flower/client.csr -subj "/C=US/ST=New York/O=ScriptChain/OU=AI/CN=FLClient"
+openssl req -new -key /etc/ssl/flower/client.key -out /etc/ssl/flower/client.csr -subj "/C=US/ST=New York/O=SC/OU=AI/CN=FLClient"
 openssl x509 -req -in /etc/ssl/flower/client.csr -CA /etc/ssl/flower/ca.crt -CAkey /etc/ssl/flower/ca.key -CAcreateserial -out /etc/ssl/flower/client.crt -days 365
 ```
 
