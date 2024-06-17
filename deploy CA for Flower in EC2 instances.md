@@ -44,7 +44,7 @@ C = US
 ST = New York
 O = ScriptChain
 OU = AI
-CN = scriptchain.co
+CN = <dns_name>
 
 [req_ext]
 basicConstraints = CA:FALSE
@@ -52,9 +52,9 @@ subjectAltName = @alt_names
 subjectKeyIdentifier = hash
 
 [alt_names]
-DNS.1 = scriptchain.co
-IP.1 = 100.27.120.77
-IP.2 = 172.31.24.144
+DNS.1 = <dns_name>
+IP.1 = <elastic_Ip_address>
+IP.2 = <flserver_private_IP>
 ```
 
 ## Step-by-Step Instructions
@@ -148,7 +148,7 @@ class SimpleClient(fl.client.NumPyClient):
 def main():
     client = SimpleClient()
     fl.client.start_client(
-        server_address="scriptchain.co:9092",
+        server_address="<dns_name>:9092",
         client=client,
         root_certificates=open("/etc/ssl/flower/ca.crt", "rb").read(),
     )
