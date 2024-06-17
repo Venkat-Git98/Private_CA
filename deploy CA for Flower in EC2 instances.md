@@ -8,7 +8,7 @@ This guide provides step-by-step instructions to set up a secure federated learn
 - One EC2 instance for the FL server
 - One EC2 instance for the FL client
 - One EC2 instance for the private CA server
-- Domain name pointing to the public IP of the FL server (e.g., scriptchain.co)
+- Domain name pointing to the public IP of the FL server (e.g., example.co)
 - OpenSSL installed on the private CA server
 - Python and necessary libraries installed on both FL server and client
 
