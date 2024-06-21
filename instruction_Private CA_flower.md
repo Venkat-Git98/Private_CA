@@ -179,21 +179,13 @@ if __name__ == "__main__":
     main()
 ```
 
-### 5. Set Permissions
 
-Ensure the necessary permissions are set correctly on the FL server and clients:
-
-```bash
-sudo chown -R ubuntu:ubuntu /etc/ssl/fl_network
-sudo chmod -R 755 /etc/ssl/fl_network
-```
-
-### 6. Verify Certificates
+### 5. Verify Certificates
 
 Verify the server certificate from a client:
 
 ```bash
-openssl s_client -connect scriptchain.co:9092 -CAfile /etc/ssl/fl_network/ca.crt
+openssl s_client -connect [domain_name]:9092 -CAfile [Directory of FL server]/ca.crt
 ```
 
 ## Summary
