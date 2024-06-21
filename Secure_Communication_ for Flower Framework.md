@@ -103,7 +103,39 @@ openssl req -new -key /etc/ssl/fl_network/client2.key -out /etc/ssl/fl_network/c
 openssl x509 -req -in /etc/ssl/fl_network/client2.csr -CA /etc/ssl/fl_network/ca.crt -CAkey /etc/ssl/fl_network/ca.key -CAcreateserial -out /etc/ssl/fl_network/client2.crt -days 730 -extensions req_ext -extfile /etc/ssl/fl_network/certificate.conf
 ```
 
-### 2. Deploy Server Code on FL Server EC2 Instance
+### 2. Transfer Certificates to FL Server and Clients Using SCP
+
+#### Transfer to FL Server
+
+On the CA server, use SCP to transfer the necessary files to the FL server:
+
+```bash
+scp /etc/ssl/fl_network/ca.crt ubuntu@FL_SERVER_IP:/etc/ssl/fl_network/
+scp /etc/ssl/fl_network/server.crt ubuntu@FL_SERVER_IP:/etc/ssl/fl_network/
+scp /etc/ssl/fl_network/server.key ubuntu@FL_SERVER_IP:/etc/ssl/fl_network/
+```
+
+#### Transfer to FL Clients
+
+On the CA server, use SCP to transfer the necessary files to each FL client:
+
+For `client1`:
+
+```bash
+scp /etc/ssl/fl_network/ca.crt ubuntu@CLIENT1_IP:/etc/ssl/fl_network/
+scp /etc/ssl/fl_network/client1.crt ubuntu@CLIENT1_IP:/etc/ssl/fl_network/
+scp /etc/ssl/fl_network/client1.key ubuntu@CLIENT1_IP:/etc/ssl/fl_network/
+```
+
+For `client2`:
+
+```bash
+scp /etc/ssl/fl_network/ca.crt ubuntu@CLIENT2_IP:/etc/ssl/fl_network/
+scp /etc/ssl/fl_network/client2.crt ubuntu@CLIENT2_IP:/etc/ssl/fl_network/
+scp /etc/ssl/fl_network/client2.key ubuntu@CLIENT2_IP:/etc/ssl/fl_network/
+```
+
+### 3. Deploy Server Code on FL Server EC2 Instance
 
 **Server Code (`server.py`):**
 
@@ -142,7 +174,7 @@ fl.server.start_server(
 )
 ```
 
-### 3. Deploy Client Code on FL Client EC2 Instances
+### 4. Deploy Client Code on FL Client EC2 Instances
 
 **Client Code (`client.py`):**
 
@@ -180,21 +212,16 @@ if __name__ == "__main__":
     main()
 ```
 
-### 4. Set Permissions and Transfer Files
+### 5. Set Permissions
 
-Transfer the files from the CA server to the FL server and clients. Ensure the necessary permissions are set correctly:
+Ensure the necessary permissions are set correctly on both the server and clients:
 
 ```bash
-# On the CA server
-aws s3 sync /etc/ssl/fl_network s3://your-bucket/fl_network
-
-# On the FL server and clients
-aws s3 sync s3://your-bucket/fl_network /etc/ssl/fl_network
 sudo chown -R ubuntu:ubuntu /etc/ssl/fl_network
 sudo chmod -R 755 /etc/ssl/fl_network
 ```
 
-### 5. Verify Certificates
+### 6. Verify Certificates
 
 Verify the server certificate from a client:
 
