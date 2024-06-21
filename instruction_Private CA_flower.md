@@ -170,7 +170,7 @@ class SimpleClient(fl.client.NumPyClient):
 def main():
     client = SimpleClient()
     fl.client.start_client(
-        server_address="scriptchain.co:9092",
+        server_address="Domain_name:9092",
         client=client,
         root_certificates=open("ca.crt", "rb").read(),
     )
